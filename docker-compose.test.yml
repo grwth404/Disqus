@@ -1,0 +1,53 @@
+version: '2'
+
+services:
+    db:
+        image: mysql:8.0
+        environment:
+            MYSQL_ROOT_PASSWORD: wordpress
+            MYSQL_DATABASE: wordpress
+            MYSQL_USER: wordpress
+            MYSQL_PASSWORD: wordpress
+        command: --default-authentication-plugin=mysql_native_password
+        healthcheck:
+            test: ["CMD", "mysqladmin" ,"ping", "-pwordpress"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+
+    test:
+        build: .
+        depends_on:
+            db:
+                condition: service_healthy
+
+        volumes:
+            # Maps the Disqus plugin folder locally to the container filesystem
+            - "./disqus:/var/www/html/wp-content/plugins/disqus"
+            - ".:/usr/src/app"
+        environment:
+            WORDPRESS_DB_HOST: db:3306
+            WORDPRESS_DB_PASSWORD: wordpress
+            WORDPRESS_DEBUG: debug
+        command: >
+            bash -e -x -c "
+                cd /usr/src/app
+
+                # We need to re-run these because we're mapping our local copy
+                # inside the container
+                echo '=== Installing dependencies ==='
+                composer install
+                yarnpkg install
+
+                echo '=== Waiting for MySQL to be ready ==='
+                dockerize -wait tcp://db:3306
+
+                echo '=== Configuring WordPress ==='
+                bin/install-wp-tests.sh wordpress_test root wordpress db latest
+
+                echo '=== Running frontend tests ==='
+                yarnpkg test
+
+                echo '=== Running backend tests ==='
+                bin/test.sh
+            "

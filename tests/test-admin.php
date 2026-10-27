@@ -1,0 +1,109 @@
+<?php
+/**
+ * Admin plugin tests.
+ */
+
+class Test_Admin extends WP_UnitTestCase {
+
+    /**
+     * Check that a sync token gets created when instantiating the admin class
+     */
+    function test_create_sync_token() {
+        delete_option( 'disqus_sync_token' );
+
+        new Disqus_Admin( 'disqus', '0.0.0', 'foo' );
+
+        $this->assertEquals( 32, strlen( get_option( 'disqus_sync_token' ) ) );
+    }
+
+    /**
+     * Check that the REST URL filter doesn't replace the host when they're the same.
+     */
+    function test_dsq_filter_rest_url_same_host() {
+        $admin = new Disqus_Admin( 'disqus', '0.0.0', 'foo' );
+
+        $rest_url = $admin->dsq_filter_rest_url( 'https://example.org/wp-json/disqus/v1' );
+
+        $this->assertEquals( 'https://example.org/wp-json/disqus/v1', $rest_url );
+    }
+
+    /**
+     * Check that the REST URL filter does replace the host when they're different.
+     */
+    function test_dsq_filter_rest_url_different_host() {
+        $admin = new Disqus_Admin( 'disqus', '0.0.0', 'foo' );
+        $previous_host = $_SERVER['HTTP_HOST'];
+        $_SERVER['HTTP_HOST'] = 'bar.com';
+
+        $rest_url = $admin->dsq_filter_rest_url( 'https://example.org/wp-json/disqus/v1' );
+
+        $this->assertEquals( 'https://bar.com/wp-json/disqus/v1', $rest_url );
+
+        $_SERVER['HTTP_HOST'] = $previous_host;
+    }
+
+    /**
+     * Ensure that REST URL filter will not error when HTTP_HOST is undefined.
+     */
+    function test_dsq_filter_rest_url_no_host() {
+        $admin = new Disqus_Admin( 'disqus', '0.0.0', 'foo' );
+        $previous_host = $_SERVER['HTTP_HOST'];
+        $_SERVER['HTTP_HOST'] = NULL;
+        $init_url = 'https://example.org/wp-json/disqus/v1';
+
+        $rest_url = $admin->dsq_filter_rest_url($init_url);
+
+        $this->assertEquals( $init_url, $rest_url );
+    }
+
+    /**
+     * Test that parse_url failure doesn't cause array_key_exists error.
+     */
+    function test_dsq_filter_rest_url_malformed_url() {
+        $admin = new Disqus_Admin( 'disqus', '0.0.0', 'foo' );
+
+        // These malformed URLs should not cause PHP errors
+        $malformed_urls = [
+            'http:///wp-json/',
+            '://example.com/wp-json/',
+            'http://exa[mple.com/wp-json/',
+            '/wp-json/',
+            ''
+        ];
+
+        foreach ( $malformed_urls as $url ) {
+            $result = $admin->dsq_filter_rest_url( $url );
+            // Should return the original URL unchanged when parse_url fails
+            $this->assertEquals( $url, $result );
+        }
+    }
+
+    function test_in_response_column_notice_required_below_wp_6_1() {
+        $admin = new Disqus_Admin( 'disqus', '3.1.5', 'foo' );
+
+        $this->assertTrue( $admin->dsq_needs_wordpress_for_in_response_column( '5.9' ) );
+        $this->assertTrue( $admin->dsq_needs_wordpress_for_in_response_column( '6.0.3' ) );
+        $this->assertFalse( $admin->dsq_needs_wordpress_for_in_response_column( '6.1' ) );
+        $this->assertFalse( $admin->dsq_needs_wordpress_for_in_response_column( '6.9' ) );
+    }
+
+    function test_in_response_column_notice_renders_on_comments_screen_for_old_wp() {
+        wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+        $admin = $this->getMockBuilder( 'Disqus_Admin' )
+            ->setConstructorArgs( array( 'disqus', '3.1.5', 'foo' ) )
+            ->setMethods( array( 'dsq_needs_wordpress_for_in_response_column' ) )
+            ->getMock();
+        $admin->method( 'dsq_needs_wordpress_for_in_response_column' )->willReturn( true );
+
+        $GLOBALS['pagenow'] = 'edit-comments.php';
+
+        ob_start();
+        $admin->dsq_display_in_response_wp_notice();
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString( 'In response to', $output );
+        $this->assertStringContainsString( 'WordPress 6.1', $output );
+    }
+
+}

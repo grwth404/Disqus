@@ -1,0 +1,62 @@
+{
+  "name": "disqus-wordpress-plugin",
+  "version": "3.1.6",
+  "description": "A WordPress plugin that allows site owners to easily replace the default commenting system with Disqus",
+  "main": "frontend/src/js/index.js",
+  "scripts": {
+    "build": "yarn run build:dev && yarn run build:dist",
+    "build:dev": "webpack --mode development",
+    "build:dist": "NODE_ENV=production webpack --mode production",
+    "start": "webpack --mode development --watch",
+    "test": "jest"
+  },
+  "author": "ryanvalentin <ryan@disqus.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^22.2.0",
+    "@types/react": "^16.0.40",
+    "@types/react-dom": "^16.0.4",
+    "@types/react-redux": "^5.0.15",
+    "awesome-typescript-loader": "5.0.0-0",
+    "babel-core": "^6.26.3",
+    "babel-jest": "^22.4.1",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-react": "^6.24.1",
+    "i18n-webpack-plugin": "^1.0.0",
+    "jest": "^24.0.0",
+    "react-test-renderer": "^16.2.0",
+    "source-map-loader": "^0.2.3",
+    "ts-jest": "^24.0.0",
+    "tslint": "^5.9.1",
+    "tslint-react": "^3.5.1",
+    "typescript": "^2.7.2",
+    "webpack": "^4.20.2",
+    "webpack-cli": "^3.1.1"
+  },
+  "dependencies": {
+    "@types/react-test-renderer": "^16.8.1",
+    "immutable": "^3.8.2",
+    "moment": "^2.21.0",
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0",
+    "react-redux": "^5.0.7",
+    "redux": "^3.7.2"
+  },
+  "repository": "https://github.com/ryanvalentin/disqus-wordpress-plugin.git",
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/frontend/tests/.*(\\.|/)(test|spec))\\.(ts|tsx)$",
+    "moduleFileExtensions": [
+      "js",
+      "jsx",
+      "ts",
+      "tsx",
+      "json"
+    ],
+    "setupFiles": [
+      "./frontend/tests/beforeAll.ts"
+    ]
+  }
+}

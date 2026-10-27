@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "outDir": "./disqus/admin/js/",
+        "sourceMap": true,
+        "skipLibCheck": true,
+        "noImplicitAny": true,
+        "module": "commonjs",
+        "target": "es2015",
+        "jsx": "react"
+    },
+    "include": [
+        "./frontend/src/ts/**/*"
+    ]
+}
